@@ -2,7 +2,7 @@ let fetchArticle = document.getElementById('fetch-article');
 
 //EVENT LISTNER FOR BUTTON CLICK
 fetchArticle.addEventListener('click', async () => {
-    alert('Fetching article content...');
+    //alert('Fetching article content...');
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         let tab = tabs[0];
         chrome.scripting.executeScript({
@@ -15,8 +15,8 @@ fetchArticle.addEventListener('click', async () => {
 //HANDLE RUNTIME
 chrome.runtime.onMessage.addListener((articleContent, sender, sendResponse) => {
     if (articleContent) {
-        document.getElementById("result").innerHTML =  articleContent;
-        //getSummary(articleContent);
+        //document.getElementById("result").innerHTML =  articleContent;
+        getSummary(articleContent);
     } else {
         document.getElementById("result").innerHTML = 'No article found on this page.';
     }
@@ -24,28 +24,32 @@ chrome.runtime.onMessage.addListener((articleContent, sender, sendResponse) => {
 
 //INTERACT WITH API
 function getSummary(articleContent) {
-    fetch('https://api.openai.com/v1/engines/gpt-3.5-turbo/completions', {
+    document.getElementById("result").innerHTML = "Loading..."
+    fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + API_KEY
         },
         body: JSON.stringify({
-            prompt: "Summarize this article: " + articleContent,
-            max_tokens: 200
+            model: "gpt-3.5-turbo", 
+            messages: [{
+                role: "system",
+                content: "Your task is to summarize articles. and put it in 3 bullet points"
+            }, {
+                role: "user",
+                content: articleContent
+            }]
         })
     })
     .then(response => response.json())
     .then(data => {
-        alert("OK OK")
-        alert(articleContent)
-        
-        if (data.choices && data.choices.length > 0) {
-            document.getElementById("result").innerHTML = data.choices[0].text;
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+            const bulletPoints = data.choices[0].message.content.split('\n').map(point => `<li>${point}</li>`).join('');
+            document.getElementById("result").innerHTML = `<ul>${bulletPoints}</ul>`;
         } else {
             console.error('No choices available in the response.');
-            alert(JSON.stringify(data, null, 2))
-            console.log(data)
+            document.getElementById("result").innerHTML = 'Error in summarizing article.';
         }
     })
     .catch(error => {
@@ -55,14 +59,12 @@ function getSummary(articleContent) {
 }
 
 
+
 function fetchArticleContent() {
-    //alert("CLICKED")
     const article = document.querySelector('article');
     if (article) {
-        // If there is an article, send its HTML content
         chrome.runtime.sendMessage(article.innerHTML);
     } else {
-        // If there is no article, send a message indicating that
         chrome.runtime.sendMessage('');
     }
 }
