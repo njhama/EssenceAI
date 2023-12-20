@@ -25,6 +25,7 @@ chrome.runtime.onMessage.addListener((articleContent, sender, sendResponse) => {
 //INTERACT WITH API
 function getSummary(articleContent) {
     document.getElementById("result").innerHTML = "Loading..."
+    //alert(articleContent)
     fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -35,7 +36,7 @@ function getSummary(articleContent) {
             model: "gpt-3.5-turbo", 
             messages: [{
                 role: "system",
-                content: "Your task is to summarize articles. and put it in 3 bullet points"
+                content: "Your task is to summarize articles. and put it in 3 bullet points. max 20 words per.r"
             }, {
                 role: "user",
                 content: articleContent
@@ -63,7 +64,7 @@ function getSummary(articleContent) {
 function fetchArticleContent() {
     const article = document.querySelector('article');
     if (article) {
-        chrome.runtime.sendMessage(article.innerHTML);
+        chrome.runtime.sendMessage(article.innerText);
     } else {
         chrome.runtime.sendMessage('');
     }
